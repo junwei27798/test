@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>剉冰點餐</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,14 +22,32 @@
       margin: 0.5rem;
     }
     button {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       padding: 1rem;
-      font-size: 1.2rem;
+      font-size: 1rem;
       background-color: #4CAF50;
       color: white;
       border: none;
       border-radius: 8px;
       width: 100%;
+    }
+    .order-list {
+      background: white;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+    .order-item {
+      border-bottom: 1px solid #ccc;
+      padding: 0.5rem 0;
+    }
+    input[type="tel"] {
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -36,32 +55,38 @@
 
   <h1>剉冰點餐</h1>
 
-  <h2>基本配料（最多 4 種）</h2>
-  <div class="ingredient-group" id="basic-ingredients">
-    <!-- 配料選項會由 JS 動態產生 -->
+  <div>
+    <label>手機號碼（必填）</label>
+    <input type="tel" id="phone" placeholder="請輸入手機號碼" required />
   </div>
 
-  <h2>額外配料（另加價）</h2>
-  <div class="ingredient-group" id="extra-ingredients">
-    <!-- 配料選項會由 JS 動態產生 -->
+  <h2>基本配料（選滿 4 種）</h2>
+  <div class="ingredient-group" id="basic-ingredients"></div>
+
+  <h2>額外配料（可自由加選）</h2>
+  <div class="ingredient-group" id="extra-ingredients"></div>
+
+  <button onclick="addBowl()">選好了，新增這碗</button>
+
+  <div class="order-list" id="order-list">
+    <h2>目前已點：</h2>
+    <div id="orders"></div>
   </div>
 
-  <button onclick="submitOrder()">送出訂單</button>
+  <button onclick="submitOrder()">送出全部訂單</button>
 
   <script>
     const ingredients = ["仙草", "愛玉", "紅豆", "綠豆", "芋圓", "地瓜圓", "粉圓", "粉粿", "米苔目", "QQ", "煉乳", "巧克力醬"];
+    const orders = [];
+    let displayName = "";
 
-    // 建立配料選項
     ingredients.forEach(name => {
-      const basicDiv = document.getElementById('basic-ingredients');
-      const extraDiv = document.getElementById('extra-ingredients');
-
-      basicDiv.innerHTML += `
+      document.getElementById("basic-ingredients").innerHTML += `
         <label class="ingredient">
           <input type="checkbox" class="basic" value="${name}" onchange="limitBasic()"> ${name}
         </label>
       `;
-      extraDiv.innerHTML += `
+      document.getElementById("extra-ingredients").innerHTML += `
         <label class="ingredient">
           <input type="checkbox" class="extra" value="${name}"> ${name}
         </label>
@@ -80,38 +105,88 @@
       }
     }
 
-    function submitOrder() {
+    function addBowl() {
       const basic = [...document.querySelectorAll('.basic:checked')].map(el => el.value);
       const extra = [...document.querySelectorAll('.extra:checked')].map(el => el.value);
 
-      if (basic.length === 0) {
-        alert("請至少選擇 1 種基本配料");
+      if (basic.length !== 4) {
+        alert("請選滿 4 種基本配料");
         return;
       }
 
-      const orderText = `📥 新訂單：
-基本配料：${basic.join('、')}
-額外配料：${extra.length > 0 ? extra.join('、') : '無'}`;
+      orders.push({ basic, extra });
 
-      sendToLine(orderText);
-    }
-
-    function sendToLine(message) {
-      fetch('https://script.google.com/macros/s/AKfycbwDnvjF9FuiY5xPT0fYOJdgH7ciDrQYjqGcwD-kpQQVJl72YKFJACYlooNRKjMVH_bd/exec', {
-        method: 'POST',
-        mode: 'no-cors', // 可改成 'cors' 用於測試
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message })
-      });
-
-      alert("訂單已送出！");
+      // 清空選項
       document.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.checked = false;
         cb.disabled = false;
       });
+
+      updateOrderList();
     }
+
+    function updateOrderList() {
+      const list = document.getElementById("orders");
+      list.innerHTML = orders.map((order, i) => `
+        <div class="order-item">
+          <strong>第 ${i + 1} 碗</strong><br>
+          基本：${order.basic.join("、")}<br>
+          額外：${order.extra.length > 0 ? order.extra.join("、") : "無"}
+        </div>
+      `).join('');
+    }
+
+    function submitOrder() {
+      const phone = document.getElementById("phone").value.trim();
+      if (phone === "") {
+        alert("請輸入手機號碼");
+        return;
+      }
+
+      if (orders.length === 0) {
+        alert("請至少選擇一碗配料");
+        return;
+      }
+
+      let orderText = `📥 剉冰新訂單
+👤 顧客：${displayName}
+📞 電話：${phone}
+`;
+
+      orders.forEach((o, i) => {
+        orderText += `\n第 ${i + 1} 碗：
+基本：${o.basic.join("、")}
+額外：${o.extra.length > 0 ? o.extra.join("、") : "無"}\n`;
+      });
+
+      fetch('https://script.google.com/macros/s/AKfycbykWiRShFkCj8TE6z9jnPBOOmJFJ2yiLx695H8hE1RTLYxpgIcS3v9drXzhyNktlkW3/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: orderText })
+      });
+
+      alert("訂單已送出！");
+      orders.length = 0;
+      updateOrderList();
+      document.getElementById("phone").value = "";
+    }
+
+    // 初始化 LIFF 抓取使用者名稱
+    async function initLiff() {
+      await liff.init({ liffId: "2007715635-BJonAn20" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      displayName = profile.displayName;
+    }
+
+    initLiff();
   </script>
 
 </body>
