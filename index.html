@@ -171,6 +171,9 @@
     }
 
     initLiff();
+    if (liff.isInClient()) {
+      liff.closeWindow();
+    }
   </script>
 
 </body>
