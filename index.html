@@ -159,6 +159,10 @@
       orders.length = 0;
       updateOrderList();
       document.getElementById("phone").value = "";
+
+      if (liff.isInClient()) {
+        liff.closeWindow();
+      }
     }
 
     // LIFF 初始化：取得 displayName
@@ -171,9 +175,6 @@
     }
 
     initLiff();
-    if (liff.isInClient()) {
-      liff.closeWindow();
-    }
   </script>
 
 </body>
