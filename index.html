@@ -6,21 +6,10 @@
   <title>剉冰點餐</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 1rem;
-      background: #f5f5f5;
-    }
-    h2 {
-      margin-top: 1.5rem;
-    }
-    .ingredient-group {
-      display: flex;
-      flex-wrap: wrap;
-    }
-    .ingredient {
-      margin: 0.5rem;
-    }
+    body { font-family: Arial, sans-serif; padding: 1rem; background: #f5f5f5; }
+    h2 { margin-top: 1.5rem; }
+    .ingredient-group { display: flex; flex-wrap: wrap; }
+    .ingredient { margin: 0.5rem; }
     button {
       margin-top: 1rem;
       padding: 1rem;
@@ -31,23 +20,11 @@
       border-radius: 8px;
       width: 100%;
     }
-    .order-list {
-      background: white;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-    }
-    .order-item {
-      border-bottom: 1px solid #ccc;
-      padding: 0.5rem 0;
-    }
+    .order-list { background: white; padding: 1rem; margin-top: 1rem; border-radius: 8px; }
+    .order-item { border-bottom: 1px solid #ccc; padding: 0.5rem 0; }
     input[type="tel"] {
-      width: 100%;
-      padding: 0.8rem;
-      font-size: 1rem;
-      margin-bottom: 1rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 0.8rem; font-size: 1rem;
+      margin-bottom: 1rem; border-radius: 6px; border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -55,22 +32,21 @@
 
   <h1>剉冰點餐</h1>
 
-  <div>
-    <label>手機號碼（必填）</label>
-    <input type="tel" id="phone" placeholder="請輸入手機號碼" required />
-  </div>
+  <label>手機號碼（怕突然沒有配料，需要另外通知，所以務必填寫唷！）</label>
+  <input type="tel" id="phone" placeholder="請輸入手機號碼" required />
 
-  <h2>基本配料（選滿 4 種）</h2>
+  <h2>基本配料（選滿 4 種，可以重複蛤。）</h2>
   <div class="ingredient-group" id="basic-ingredients"></div>
 
-  <h2>額外配料（可自由加選）</h2>
+  <h2>額外配料（自由加選，每樣 +5 元。）</h2>
   <div class="ingredient-group" id="extra-ingredients"></div>
 
-  <button onclick="addBowl()">選好了，新增這碗</button>
+  <button onclick="addBowl()">選好了</button>
 
   <div class="order-list" id="order-list">
     <h2>目前已點：</h2>
     <div id="orders"></div>
+    <h3 id="total"></h3>
   </div>
 
   <button onclick="submitOrder()">送出全部訂單</button>
@@ -80,17 +56,16 @@
     const orders = [];
     let displayName = "";
 
+    // 建立配料選項
     ingredients.forEach(name => {
       document.getElementById("basic-ingredients").innerHTML += `
         <label class="ingredient">
           <input type="checkbox" class="basic" value="${name}" onchange="limitBasic()"> ${name}
-        </label>
-      `;
+        </label>`;
       document.getElementById("extra-ingredients").innerHTML += `
         <label class="ingredient">
           <input type="checkbox" class="extra" value="${name}"> ${name}
-        </label>
-      `;
+        </label>`;
     });
 
     function limitBasic() {
@@ -110,13 +85,14 @@
       const extra = [...document.querySelectorAll('.extra:checked')].map(el => el.value);
 
       if (basic.length !== 4) {
-        alert("請選滿 4 種基本配料");
+        alert("請選滿 4 種基本配料，可以重複～");
         return;
       }
 
-      orders.push({ basic, extra });
+      const subtotal = 60 + (extra.length * 10);
+      orders.push({ basic, extra, subtotal });
 
-      // 清空選項
+      // 清除選項
       document.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.checked = false;
         cb.disabled = false;
@@ -127,44 +103,51 @@
 
     function updateOrderList() {
       const list = document.getElementById("orders");
-      list.innerHTML = orders.map((order, i) => `
-        <div class="order-item">
-          <strong>第 ${i + 1} 碗</strong><br>
-          基本：${order.basic.join("、")}<br>
-          額外：${order.extra.length > 0 ? order.extra.join("、") : "無"}
-        </div>
-      `).join('');
+      let total = 0;
+      list.innerHTML = orders.map((order, i) => {
+        total += order.subtotal;
+        return `
+          <div class="order-item">
+            <strong>第 ${i + 1} 碗</strong><br>
+            基本：${order.basic.join("、")}<br>
+            額外：${order.extra.length > 0 ? order.extra.join("、") : "無"}<br>
+            小計：${order.subtotal} 元
+          </div>`;
+      }).join('');
+      document.getElementById("total").innerText = `總金額：${total} 元`;
     }
 
     function submitOrder() {
       const phone = document.getElementById("phone").value.trim();
-      if (phone === "") {
+      if (!phone) {
         alert("請輸入手機號碼");
         return;
       }
 
       if (orders.length === 0) {
-        alert("請至少選擇一碗配料");
+        alert("請先新增至少一碗剉冰");
         return;
       }
 
+      let total = 0;
       let orderText = `📥 剉冰新訂單
 👤 顧客：${displayName}
-📞 電話：${phone}
-`;
+📞 電話：${phone}\n`;
 
       orders.forEach((o, i) => {
+        total += o.subtotal;
         orderText += `\n第 ${i + 1} 碗：
 基本：${o.basic.join("、")}
-額外：${o.extra.length > 0 ? o.extra.join("、") : "無"}\n`;
+額外：${o.extra.length > 0 ? o.extra.join("、") : "無"}
+小計：${o.subtotal} 元`;
       });
+
+      orderText += `\n\n💰 總金額：${total} 元`;
 
       fetch('https://script.google.com/macros/s/AKfycbykWiRShFkCj8TE6z9jnPBOOmJFJ2yiLx695H8hE1RTLYxpgIcS3v9drXzhyNktlkW3/exec', {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: orderText })
       });
 
@@ -174,13 +157,10 @@
       document.getElementById("phone").value = "";
     }
 
-    // 初始化 LIFF 抓取使用者名稱
+    // LIFF 初始化：取得 displayName
     async function initLiff() {
       await liff.init({ liffId: "2007715635-BJonAn20" });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
+      if (!liff.isLoggedIn()) liff.login();
 
       const profile = await liff.getProfile();
       displayName = profile.displayName;
