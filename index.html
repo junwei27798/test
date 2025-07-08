@@ -32,13 +32,16 @@
 
   <h1>剉冰點餐</h1>
 
-  <label>手機號碼（怕突然沒有配料，需要另外通知，所以務必填寫唷！）</label>
+  <label>
+    手機號碼<br>
+    <small style="color: gray;">（怕突然沒有配料，需要另外通知，所以務必填寫唷！）</small>
+  </label>
   <input type="tel" id="phone" placeholder="請輸入手機號碼" required />
 
-  <h2>基本配料（選滿 4 種，可以重複蛤。）</h2>
+  <h2>基本配料（最多只選 4 種）</h2>
   <div class="ingredient-group" id="basic-ingredients"></div>
 
-  <h2>額外配料（自由加選，每樣 +5 元。）</h2>
+  <h2>額外配料 (加選)（每樣 +5 元）</h2>
   <div class="ingredient-group" id="extra-ingredients"></div>
 
   <button onclick="addBowl()">選好了</button>
@@ -83,23 +86,24 @@
     function addBowl() {
       const basic = [...document.querySelectorAll('.basic:checked')].map(el => el.value);
       const extra = [...document.querySelectorAll('.extra:checked')].map(el => el.value);
-
-      if (basic.length !== 4) {
-        alert("請選滿 4 種基本配料，可以重複～");
+    
+      if (basic.length === 0) {
+        alert("請至少選擇 1 種基本配料");
         return;
       }
-
+    
       const subtotal = 60 + (extra.length * 10);
       orders.push({ basic, extra, subtotal });
-
+    
       // 清除選項
       document.querySelectorAll('input[type=checkbox]').forEach(cb => {
         cb.checked = false;
         cb.disabled = false;
       });
-
+    
       updateOrderList();
     }
+
 
     function updateOrderList() {
       const list = document.getElementById("orders");
