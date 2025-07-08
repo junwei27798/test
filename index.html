@@ -1,45 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>LIFF 測試</title>
-  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>剉冰點餐</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 100px; }
-    button { padding: 10px 20px; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f5f5f5;
+    }
+    h2 {
+      margin-top: 1.5rem;
+    }
+    .ingredient-group {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .ingredient {
+      margin: 0.5rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      font-size: 1.2rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <h2 id="user">載入中...</h2>
 
-  <form id="submitForm" method="POST" action="https://script.google.com/macros/s/AKfycbz7mY6R5ix70eNzc2yv10G8tS424kdr90MMiXhMcCh0KGsWZYyqyS6oRN_-epSrUGgb/exec">
-    <input type="hidden" name="message" id="messageInput">
-    <button type="submit" id="sendBtn" style="display:none;">送出訊息給官方帳號</button>
-  </form>
+  <h1>剉冰點餐</h1>
 
-  <iframe name="hidden_iframe" style="display:none;"></iframe>
+  <h2>基本配料（最多 4 種）</h2>
+  <div class="ingredient-group" id="basic-ingredients">
+    <!-- 配料選項會由 JS 動態產生 -->
+  </div>
+
+  <h2>額外配料（另加價）</h2>
+  <div class="ingredient-group" id="extra-ingredients">
+    <!-- 配料選項會由 JS 動態產生 -->
+  </div>
+
+  <button onclick="submitOrder()">送出訂單</button>
 
   <script>
-    let userId = '';
-    let displayName = '';
+    const ingredients = ["仙草", "愛玉", "紅豆", "綠豆", "芋圓", "地瓜圓", "粉圓", "粉粿", "米苔目", "QQ", "煉乳", "巧克力醬"];
 
-    liff.init({ liffId: "2007715635-BJonAn20" }).then(() => {
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      } else {
-        return liff.getProfile();
-      }
-    }).then(profile => {
-      if (!profile) return;
-      userId = profile.userId;
-      displayName = profile.displayName;
+    // 建立配料選項
+    ingredients.forEach(name => {
+      const basicDiv = document.getElementById('basic-ingredients');
+      const extraDiv = document.getElementById('extra-ingredients');
 
-      document.getElementById("user").innerText = `Hi, ${displayName}`;
-      document.getElementById("messageInput").value = `${displayName}（${userId}）按下了按鈕`;
-      document.getElementById("sendBtn").style.display = 'inline-block';
-    }).catch(err => {
-      document.getElementById("user").innerText = "載入失敗：" + err;
+      basicDiv.innerHTML += `
+        <label class="ingredient">
+          <input type="checkbox" class="basic" value="${name}" onchange="limitBasic()"> ${name}
+        </label>
+      `;
+      extraDiv.innerHTML += `
+        <label class="ingredient">
+          <input type="checkbox" class="extra" value="${name}"> ${name}
+        </label>
+      `;
     });
+
+    function limitBasic() {
+      const checked = document.querySelectorAll('.basic:checked');
+      const allBasic = document.querySelectorAll('.basic');
+      if (checked.length >= 4) {
+        allBasic.forEach(input => {
+          if (!input.checked) input.disabled = true;
+        });
+      } else {
+        allBasic.forEach(input => input.disabled = false);
+      }
+    }
+
+    function submitOrder() {
+      const basic = [...document.querySelectorAll('.basic:checked')].map(el => el.value);
+      const extra = [...document.querySelectorAll('.extra:checked')].map(el => el.value);
+
+      if (basic.length === 0) {
+        alert("請至少選擇 1 種基本配料");
+        return;
+      }
+
+      const orderText = `📥 新訂單：
+基本配料：${basic.join('、')}
+額外配料：${extra.length > 0 ? extra.join('、') : '無'}`;
+
+      sendToLine(orderText);
+    }
+
+    function sendToLine(message) {
+      fetch('https://script.google.com/macros/s/AKfycbzi56Uwej1AlDRkb2VQvbQ7xh6I6oSb9r-gHCv1GlXH3ThvSSbK1QE41snlAOL_Jm8J/exec', {
+        method: 'POST',
+        mode: 'no-cors', // 可改成 'cors' 用於測試
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message })
+      });
+
+      alert("訂單已送出！");
+      document.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+      });
+    }
   </script>
+
 </body>
 </html>
