@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LIFF 測試</title>
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 100px; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2 id="user">載入中...</h2>
+  <button id="sendBtn" style="display:none;">送出訊息給官方帳號</button>
+
+  <script>
+    let userId = '';
+    let displayName = '';
+
+    liff.init({ liffId: "YOUR_LIFF_ID" }).then(() => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        return liff.getProfile();
+      }
+    }).then(profile => {
+      if (!profile) return;
+      userId = profile.userId;
+      displayName = profile.displayName;
+      document.getElementById("user").innerText = `Hi, ${displayName}`;
+      document.getElementById("sendBtn").style.display = 'inline-block';
+    });
+
+    document.getElementById("sendBtn").addEventListener("click", () => {
+      const message = `${displayName}（${userId}）按下了按鈕`;
+
+      fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+        method: "POST",
+        body: JSON.stringify({ message }),
+        headers: { "Content-Type": "application/json" }
+      }).then(res => {
+        alert("已傳送訊息！");
+        liff.closeWindow(); // 可選
+      });
+    });
+  </script>
+</body>
+</html>
