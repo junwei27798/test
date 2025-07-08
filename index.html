@@ -12,34 +12,37 @@
 <body>
   <h2 id="user">載入中...</h2>
 
-  <form id="submitForm" method="POST" action="https://script.google.com/macros/s/AKfycbz7mY6R5ix70eNzc2yv10G8tS424kdr90MMiXhMcCh0KGsWZYyqyS6oRN_-epSrUGgb/exec" target="hidden_iframe">
-    <input type="hidden" name="message" id="messageInput">
-    <button type="submit" id="sendBtn" style="display:none;">送出訊息給官方帳號</button>
-  </form>
+  <form id="submitForm" method="POST" action="https://script.google.com/macros/s/AKfycbx8u0TzCIICxMLzRlMQ9N2cZVpKfUwOmT_hM7H81jDphDUqIx8WnUB_9_qtu5VDqPIL/exec" target="hiddenWindow" onsubmit="setTimeout(() => hiddenWindow.close(), 100);">
+  <input type="hidden" name="message" id="messageInput">
+  <button type="submit" id="sendBtn" style="display:none;">送出訊息給官方帳號</button>
+</form>
 
-  <iframe name="hidden_iframe" style="display:none;"></iframe>
+<script>
+  let userId = '';
+  let displayName = '';
+  let hiddenWindow;
 
-  <script>
-    let userId = '';
-    let displayName = '';
+  liff.init({ liffId: "2007715635-BJonAn20" }).then(() => {
+    if (!liff.isLoggedIn()) {
+      liff.login();
+    } else {
+      return liff.getProfile();
+    }
+  }).then(profile => {
+    if (!profile) return;
+    userId = profile.userId;
+    displayName = profile.displayName;
 
-    liff.init({ liffId: "2007715635-BJonAn20" }).then(() => {
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      } else {
-        return liff.getProfile();
-      }
-    }).then(profile => {
-      if (!profile) return;
-      userId = profile.userId;
-      displayName = profile.displayName;
+    document.getElementById("user").innerText = `Hi, ${displayName}`;
+    document.getElementById("messageInput").value = `${displayName}（${userId}）按下了按鈕`;
+    document.getElementById("sendBtn").style.display = 'inline-block';
+  });
 
-      document.getElementById("user").innerText = `Hi, ${displayName}`;
-      document.getElementById("messageInput").value = `${displayName}（${userId}）按下了按鈕`;
-      document.getElementById("sendBtn").style.display = 'inline-block';
-    }).catch(err => {
-      document.getElementById("user").innerText = "載入失敗：" + err;
-    });
-  </script>
+  document.getElementById("submitForm").addEventListener("submit", function (e) {
+    // 開一個小視窗送出請求，然後立即關閉
+    hiddenWindow = window.open('', 'hiddenWindow', 'width=1,height=1');
+  });
+</script>
+
 </body>
 </html>
